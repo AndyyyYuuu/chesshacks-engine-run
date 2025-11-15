@@ -1,17 +1,25 @@
 from .utils import chess_manager, GameContext
-from chess import Move
+from chess import Move, Board
 import random
 import time
+from .search import negamax_root, EvaluatorWrapper
 
 # Write code here that runs once
 # Can do things like load models from huggingface, make connections to subprocesses, etcwenis
 
+evaluator = EvaluatorWrapper("best_model.pt")
+
 
 @chess_manager.entrypoint
-def test_func(ctx: GameContext):
-    # This gets called every time the model needs to make a move
-    # Return a python-chess Move object that is a legal move for the current position
+def get_move(ctx: GameContext) -> Move:
+    move, score = negamax_root(ctx.board, 2, evaluator)
+    return move
+    print(type(move), move == "e7e6")
+    return Move.from_uci("e7e6")
+    return Move.from_uci(move)
 
+
+def test_func(ctx: GameContext) -> Move:
     print("Cooking move...")
     print(ctx.board.move_stack)
     time.sleep(0.1)
