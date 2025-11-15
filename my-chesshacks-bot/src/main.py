@@ -9,8 +9,8 @@ from .chessformer.model import ChessFormer, ChessFormerInputTokenizer
 # Write code here that runs once
 # Can do things like load models from huggingface, make connections to subprocesses, etcwenis
 
-model = ChessFormer()
-model.load_state_dict(torch.load("src/chessformer/chessformer_policy.pt", map_location="cpu"))
+model = ChessFormer(384, 8, 8, 512)
+model.load_state_dict(torch.load("src/chessformer/chessformer_large.pt", map_location="cpu"))
 model.eval()
 
 tokenizer = ChessFormerInputTokenizer()

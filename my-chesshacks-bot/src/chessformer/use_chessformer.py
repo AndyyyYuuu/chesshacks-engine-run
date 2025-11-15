@@ -165,8 +165,3 @@ def get_dist(board, model, tokenizer, temperature=1.0, top_k=None):
     
     return uci_probs
 
-model = ChessFormer()
-model.load_state_dict(torch.load("src/chessformer/chessformer_policy.pt", map_location="cpu"))
-model.eval()
-
-tokenizer = ChessFormerInputTokenizer()
