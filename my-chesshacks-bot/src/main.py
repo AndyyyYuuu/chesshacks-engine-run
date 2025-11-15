@@ -12,7 +12,7 @@ evaluator = EvaluatorWrapper("best_model.pt")
 
 @chess_manager.entrypoint
 def get_move(ctx: GameContext) -> Move:
-    move, score = negamax_root(ctx.board, 2, evaluator)
+    move, score = negamax_root(ctx.board, 3, evaluator, tt)
     print(move, score)
     return move
 
@@ -43,4 +43,3 @@ def reset_func(ctx: GameContext):
     # This gets called when a new game begins
     # Should do things like clear caches, reset model state, etc.
     tt.clear()
-    pass
