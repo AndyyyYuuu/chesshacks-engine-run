@@ -2,22 +2,19 @@ from .utils import chess_manager, GameContext
 from chess import Move, Board
 import random
 import time
-from .search import negamax_root, EvaluatorWrapper
+from .search import negamax_root, EvaluatorWrapper, TranspositionTable
 
 # Write code here that runs once
 # Can do things like load models from huggingface, make connections to subprocesses, etcwenis
-
+tt = TranspositionTable()
 evaluator = EvaluatorWrapper("best_model.pt")
 
 
 @chess_manager.entrypoint
 def get_move(ctx: GameContext) -> Move:
     move, score = negamax_root(ctx.board, 2, evaluator)
+    print(move, score)
     return move
-    print(type(move), move == "e7e6")
-    return Move.from_uci("e7e6")
-    return Move.from_uci(move)
-
 
 def test_func(ctx: GameContext) -> Move:
     print("Cooking move...")
@@ -45,4 +42,5 @@ def test_func(ctx: GameContext) -> Move:
 def reset_func(ctx: GameContext):
     # This gets called when a new game begins
     # Should do things like clear caches, reset model state, etc.
+    tt.clear()
     pass
