@@ -19,9 +19,8 @@ model.eval()
 
 @chess_manager.entrypoint
 def get_move(ctx: GameContext) -> Move:
-    depth = 3
-    if ctx.timeLeft <= 30000: depth = 2
-    elif ctx.timeLeft <= 10000: depth = 1
+    depth = 2
+    if ctx.timeLeft <= 20000: depth = 1
     #return Move.from_uci("e7e5")
     # move, score = negamax_root(ctx.board, 3, evaluator)
     move, score = search_with_iterative_deepening(ctx.board, depth)
