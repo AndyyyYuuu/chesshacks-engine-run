@@ -21,7 +21,7 @@ model.eval()
 def get_move(ctx: GameContext) -> Move:
     #return Move.from_uci("e7e5")
     # move, score = negamax_root(ctx.board, 3, evaluator)
-    move, score = search_with_iterative_deepening(ctx.board, 3)
+    move, score = search_with_iterative_deepening(ctx.board, 2)
     print(type(move))
     print(f"Move: {move}, Score: {score}")
     return move
