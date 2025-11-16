@@ -14,7 +14,7 @@ evaluator = EvaluatorWrapper("src/tree_search/best_model_12blks_v1.pt", n_blocks
 def get_move(ctx: GameContext) -> Move:
     #return Move.from_uci("e7e5")
     
-    move, score = negamax_root(ctx.board, 3, evaluator, tt)
+    move, score = negamax_root(ctx.board, 3, evaluator)
     ctx.board.copy().push(move)
     print(evaluator.evaluate(ctx.board))
     print(move, score)
@@ -44,6 +44,4 @@ def test_func(ctx: GameContext) -> Move:
 
 @chess_manager.reset
 def reset_func(ctx: GameContext):
-    # This gets called when a new game begins
-    # Should do things like clear caches, reset model state, etc.
     tt.clear()

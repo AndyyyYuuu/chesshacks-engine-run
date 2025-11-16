@@ -78,7 +78,7 @@ class EvaluatorWrapper:
             self.eval_cache.clear()
         
         self.eval_cache[fen] = score
-        return score
+        return score if board.turn == chess.WHITE else -score
     
 
 def _capture_value(board, move):
@@ -138,8 +138,8 @@ def quiescence_search(board, depth, alpha, beta, evaluator, tt=None):
     stand_pat = evaluator.evaluate(board)
 
     ###
-    if board.turn == chess.BLACK:
-        stand_pat = -stand_pat
+    #if board.turn == chess.BLACK:
+    #    stand_pat = -stand_pat
 
     if stand_pat >= beta:
         return beta
@@ -167,28 +167,24 @@ def quiescence_search(board, depth, alpha, beta, evaluator, tt=None):
 
 
 def negamax(board: chess.Board, depth: int, alpha: float, beta: float, evaluator: EvaluatorWrapper, tt: TranspositionTable = None) -> float:
-    #print(f"  >>> negamax ENTERED: depth={depth}, alpha={alpha}, beta={beta}, fen={board.fen()[:30]}")
-    
     # Check transposition table first
     if tt:
         tt_result = tt.lookup(board, depth, alpha, beta)
         if tt_result is not None:
             score, flag, stored_move = tt_result
-            #print(f"  negamax depth={depth}: TT HIT -> {score}")
-            return score
+            return score  # Return cached score
     
     # Terminal positions
     if board.is_game_over():
         if board.is_checkmate():
+            #return -1e8 if board.turn == chess.WHITE else 1e8
             return -1e8
         elif board.is_stalemate() or board.is_insufficient_material():
             return 0
         return 0
     
     if depth == 0:
-        qscore = quiescence_search(board, 4, alpha, beta, evaluator, tt)
-        #print(f"  negamax depth=0: quiescence returned {qscore}, alpha={alpha}, beta={beta}")
-        return qscore
+        return quiescence_search(board, 4, alpha, beta, evaluator, tt)
 
     tt_move = None
     if tt:
@@ -214,11 +210,11 @@ def negamax(board: chess.Board, depth: int, alpha: float, beta: float, evaluator
             alpha = score
 
         if alpha >= beta:
-            # Beta cutoff - return the score we found (alpha), not the bound (beta)
-            print(f"  negamax depth={depth}: BETA CUTOFF -> alpha={alpha}, beta={beta}, max_value={max_value}, score_that_caused_cutoff={score}")
+            # Beta cutoff - store as LOWER bound
             if tt:
-                tt.store(board, depth, alpha, 'LOWER', best_move)
-            return alpha
+                #tt.store(board, depth, beta, 'LOWER', best_move)
+                tt.store(board, depth, beta, 'LOWER', best_move)
+            return beta
 
     # Determine flag for storing
     if max_value <= alpha:  # All moves were <= alpha (shouldn't happen with proper initialization)
@@ -248,10 +244,10 @@ def negamax_root(board: chess.Board, depth: int, evaluator: EvaluatorWrapper, tt
 
     for move in moves:
         board.push(move)
-        score = -negamax(board, depth - 1, -beta, -alpha, evaluator, None)
+        score = -negamax(board, depth - 1, -beta, -alpha, evaluator, tt)
         board.pop()
 
-        print("Root checkjjhiu:", move, score)
+        print("Root check:", move, score)
 
         if score > best_score:
             best_score = score
