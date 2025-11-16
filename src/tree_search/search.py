@@ -59,7 +59,8 @@ class TranspositionTable:
 class EvaluatorWrapper:
     def __init__(self, model_path, n_blocks=8):
         self.model = Evaluator(in_channels=19, channels=32, n_blocks=n_blocks)
-        self.model.load_state_dict(torch.load(model_path))
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model.load_state_dict(torch.load(model_path, map_location=device))
         self.model.eval()
         self.eval_cache = {}
 
