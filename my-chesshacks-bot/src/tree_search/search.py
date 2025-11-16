@@ -32,7 +32,7 @@ class TranspositionTable:
         if flag == 'EXACT':
             return (score, flag, entry.get('best_move'))
         elif flag == 'LOWER' and score >= beta:
-            return (beta, flag, entry.get('best_move'))
+            return (score, flag, entry.get('best_move'))
         elif flag == 'UPPER' and score <= alpha:
             return (score, flag, entry.get('best_move'))  # Return stored score, not alpha!
         return None
@@ -57,8 +57,8 @@ class TranspositionTable:
         self.table.clear()
 
 class EvaluatorWrapper:
-    def __init__(self, model_path):
-        self.model = Evaluator(in_channels=19, channels=32, n_blocks=8)
+    def __init__(self, model_path, n_blocks=8):
+        self.model = Evaluator(in_channels=19, channels=32, n_blocks=n_blocks)
         self.model.load_state_dict(torch.load(model_path))
         self.model.eval()
         self.eval_cache = {}
@@ -72,10 +72,6 @@ class EvaluatorWrapper:
             x = encode(board)  # (1, 19, 8, 8)
             output = self.model(x)  # (1, 1)
             score = output.item() * 100  # scale to centipawns
-        
-        ###
-        if board.turn == chess.BLACK:
-            score = -score
         
         # Limit cache size to prevent memory issues
         if len(self.eval_cache) > 50000:
@@ -126,10 +122,24 @@ def order_moves(board, moves, tt_move:chess.Move=None):
     return ordered + captures + others
 
 def quiescence_search(board, depth, alpha, beta, evaluator, tt=None):
+    # Terminal positions (in quiescence search as well?)
+    if board.is_game_over():
+        if board.is_checkmate():
+            #return -1e8 if board.turn == chess.WHITE else 1e8
+            return -1e8
+        elif board.is_stalemate() or board.is_insufficient_material():
+            return 0
+        return 0
+    
     if depth <= 0:
-        return evaluator.evaluate(board)
+        score = evaluator.evaluate(board)
+        return score if board.turn == chess.WHITE else -score
 
     stand_pat = evaluator.evaluate(board)
+
+    ###
+    if board.turn == chess.BLACK:
+        stand_pat = -stand_pat
 
     if stand_pat >= beta:
         return beta
@@ -139,7 +149,7 @@ def quiescence_search(board, depth, alpha, beta, evaluator, tt=None):
         alpha = stand_pat
 
     captures = [move for move in board.legal_moves if board.is_capture(move)]
-    captures = order_moves(board, captures)
+    #captures = order_moves(board, captures)
 
     for move in captures:
         board.push(move)
@@ -157,25 +167,28 @@ def quiescence_search(board, depth, alpha, beta, evaluator, tt=None):
 
 
 def negamax(board: chess.Board, depth: int, alpha: float, beta: float, evaluator: EvaluatorWrapper, tt: TranspositionTable = None) -> float:
+    #print(f"  >>> negamax ENTERED: depth={depth}, alpha={alpha}, beta={beta}, fen={board.fen()[:30]}")
+    
     # Check transposition table first
     if tt:
         tt_result = tt.lookup(board, depth, alpha, beta)
         if tt_result is not None:
             score, flag, stored_move = tt_result
-            return score  # Return cached score
+            #print(f"  negamax depth={depth}: TT HIT -> {score}")
+            return score
     
-    # Handle terminal positions
+    # Terminal positions
     if board.is_game_over():
         if board.is_checkmate():
-            #return -1e8 if board.turn == chess.WHITE else 1e8
             return -1e8
         elif board.is_stalemate() or board.is_insufficient_material():
             return 0
-        # Other draw conditions
         return 0
     
     if depth == 0:
-        return quiescence_search(board, 4, alpha, beta, evaluator, tt)
+        qscore = quiescence_search(board, 4, alpha, beta, evaluator, tt)
+        #print(f"  negamax depth=0: quiescence returned {qscore}, alpha={alpha}, beta={beta}")
+        return qscore
 
     tt_move = None
     if tt:
@@ -185,7 +198,8 @@ def negamax(board: chess.Board, depth: int, alpha: float, beta: float, evaluator
 
     max_value = -float("inf")
     best_move = None
-    moves = order_moves(board, list(board.legal_moves), tt_move)
+    #moves = order_moves(board, list(board.legal_moves), tt_move)
+    moves = list(board.legal_moves)
 
     for move in moves:
         board.push(move)
@@ -200,10 +214,11 @@ def negamax(board: chess.Board, depth: int, alpha: float, beta: float, evaluator
             alpha = score
 
         if alpha >= beta:
-            # Beta cutoff - store as LOWER bound
+            # Beta cutoff - return the score we found (alpha), not the bound (beta)
+            print(f"  negamax depth={depth}: BETA CUTOFF -> alpha={alpha}, beta={beta}, max_value={max_value}, score_that_caused_cutoff={score}")
             if tt:
-                tt.store(board, depth, beta, 'LOWER', best_move)
-            return beta
+                tt.store(board, depth, alpha, 'LOWER', best_move)
+            return alpha
 
     # Determine flag for storing
     if max_value <= alpha:  # All moves were <= alpha (shouldn't happen with proper initialization)
@@ -236,7 +251,7 @@ def negamax_root(board: chess.Board, depth: int, evaluator: EvaluatorWrapper, tt
         score = -negamax(board, depth - 1, -beta, -alpha, evaluator, None)
         board.pop()
 
-        print("Root check:", move, score)
+        print("Root checkjjhiu:", move, score)
 
         if score > best_score:
             best_score = score
@@ -246,16 +261,3 @@ def negamax_root(board: chess.Board, depth: int, evaluator: EvaluatorWrapper, tt
             alpha = score
 
     return best_move, best_score
-
-
-if __name__ == "__main__":
-    evaluator = EvaluatorWrapper("./best_model.pt")
-    tt = TranspositionTable()
-
-    board = chess.Board()
-    print(board)
-
-    depth = 4
-    best_move, best_score = negamax_root(board, depth, evaluator, tt)
-
-    print(f"Best Move: {best_move}, Score: {best_score}")
