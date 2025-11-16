@@ -189,7 +189,6 @@ class Evaluator(nn.Module):
 
 
 
-
 # model = Evaluator(in_channels=19)
 
 # def count_parameters(model):

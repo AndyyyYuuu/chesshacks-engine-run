@@ -228,7 +228,8 @@ def negamax(board, depth, alpha, beta, ply):
         return DRAW_VALUE
 
     if depth == 0:
-        return quiescence_search(board, alpha, beta)
+        #return quiescence_search(board, alpha, beta)
+        return evaluate(board)
 
     best_val = -float("inf")
     original_alpha = alpha
