@@ -150,7 +150,7 @@ def quiescence_search(board, depth, alpha, beta, evaluator, tt=None):
         alpha = stand_pat
 
     captures = [move for move in board.legal_moves if board.is_capture(move)]
-    #captures = order_moves(board, captures)
+    captures = order_moves(board, captures)
 
     for move in captures:
         board.push(move)
@@ -195,7 +195,7 @@ def negamax(board: chess.Board, depth: int, alpha: float, beta: float, evaluator
 
     max_value = -float("inf")
     best_move = None
-    #moves = order_moves(board, list(board.legal_moves), tt_move)
+    moves = order_moves(board, list(board.legal_moves), tt_move)
     moves = list(board.legal_moves)
 
     for move in moves:
